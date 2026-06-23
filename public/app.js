@@ -218,7 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function loadDashboard() {
-    tbody.innerHTML = '<tr><td colspan="8" class="text-center">Carregando lista de contas...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center">Carregando lista de contas...</td></tr>';
     mccInfo.textContent = 'Carregando contas da MCC...';
 
     try {
@@ -234,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const accounts = data.accounts || [];
 
       if (accounts.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center">Nenhuma conta cliente ativa encontrada nesta MCC.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">Nenhuma conta cliente ativa encontrada nesta MCC.</td></tr>';
         mccInfo.textContent = 'MCC sem contas ativas vinculadas.';
         return;
       }
@@ -249,7 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
         row.innerHTML = `
           <td><strong>${formatAccountId(account.id)}</strong></td>
           <td>${escapeHtml(account.name)}</td>
-          <td colspan="6" class="loading-cell text-center">
+          <td colspan="5" class="loading-cell text-center">
             <span class="spinner"></span> Carregando dados...
           </td>
         `;
@@ -263,7 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('Error loading dashboard:', error);
       tbody.innerHTML = `
         <tr>
-          <td colspan="8" class="error-cell text-center">
+          <td colspan="7" class="error-cell text-center">
             <strong>Erro ao carregar contas da MCC:</strong> ${escapeHtml(error.message)}
           </td>
         </tr>
@@ -308,7 +308,7 @@ document.addEventListener('DOMContentLoaded', () => {
       row.innerHTML = `
         <td><strong>${formatAccountId(account.id)}</strong></td>
         <td>${escapeHtml(account.name)}</td>
-        <td colspan="6" class="error-text text-center">
+        <td colspan="5" class="error-text text-center">
           ⚠️ ${escapeHtml(errorMsg)}
         </td>
       `;
@@ -387,7 +387,6 @@ document.addEventListener('DOMContentLoaded', () => {
       <td>${spentText}</td>
       <td>${scheduledDailyBudgetText}</td>
       <td class="${remainingClass}"><strong>${remainingText}</strong></td>
-      <td><strong>${pctText}</strong></td>
       <td><strong>${daysLeftText}</strong></td>
       <td>${notifyHtml}</td>
     `;
