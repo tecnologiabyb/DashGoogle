@@ -50,18 +50,22 @@ let tokenExpiresAt = 0;
 function saveRefreshToken(refreshToken) {
   const envPath = path.join(__dirname, '.env');
   let envContent = '';
-  if (fs.existsSync(envPath)) {
-    envContent = fs.readFileSync(envPath, 'utf8');
+  try {
+    if (fs.existsSync(envPath)) {
+      envContent = fs.readFileSync(envPath, 'utf8');
+    }
+    
+    if (envContent.includes('GOOGLE_ADS_REFRESH_TOKEN=')) {
+      envContent = envContent.replace(/GOOGLE_ADS_REFRESH_TOKEN=.*/, `GOOGLE_ADS_REFRESH_TOKEN=${refreshToken}`);
+    } else {
+      envContent += `\nGOOGLE_ADS_REFRESH_TOKEN=${refreshToken}`;
+    }
+    fs.writeFileSync(envPath, envContent, 'utf8');
+    console.log('Refresh token saved to .env successfully.');
+  } catch (error) {
+    console.warn('Warning: Could not save refresh token to .env (this is expected on read-only filesystems like Vercel):', error.message);
   }
-  
-  if (envContent.includes('GOOGLE_ADS_REFRESH_TOKEN=')) {
-    envContent = envContent.replace(/GOOGLE_ADS_REFRESH_TOKEN=.*/, `GOOGLE_ADS_REFRESH_TOKEN=${refreshToken}`);
-  } else {
-    envContent += `\nGOOGLE_ADS_REFRESH_TOKEN=${refreshToken}`;
-  }
-  fs.writeFileSync(envPath, envContent, 'utf8');
   process.env.GOOGLE_ADS_REFRESH_TOKEN = refreshToken;
-  console.log('Refresh token saved to .env successfully.');
 }
 
 // Get Access Token using OAuth2 Refresh Token
@@ -679,6 +683,10 @@ app.post('/api/notify', async (req, res) => {
 });
 
 // Start Server
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
+if (process.env.VERCEL !== '1') {
+  app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
