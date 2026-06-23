@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard de Saldo Google Ads MCC</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Saldo Restante de Contas - Google Ads MCC</h1>
+      <div id="connection-status" class="status-badge loading">Verificando conexão...</div>
+    </header>
+
+    <!-- Setup / Auth Section -->
+    <section id="auth-section" class="card hidden">
+      <h2>Autenticação Necessária</h2>
+      <p>A aplicação precisa de autorização para acessar os dados da sua conta gerenciadora (MCC) no Google Ads.</p>
+      <div class="auth-buttons">
+        <a href="/auth" class="btn btn-primary">Conectar com o Google Ads</a>
+      </div>
+    </section>
+
+    <!-- Dashboard Content Section -->
+    <section id="dashboard-section" class="hidden">
+      <div class="control-panel">
+        <div id="mcc-info" class="mcc-info-box">Carregando informações da MCC...</div>
+        <button id="btn-refresh" class="btn btn-secondary">Atualizar Lista de Contas</button>
+      </div>
+
+      <!-- Tabs Navigation -->
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="saldos">Orçamentos & Saldos</button>
+        <button class="tab-btn" data-tab="responsibles">Responsáveis pelas Contas</button>
+      </div>
+
+      <!-- Tab Content: Saldos -->
+      <div id="tab-content-saldos" class="tab-content">
+        <div class="table-container">
+          <table id="accounts-table">
+            <thead>
+              <tr>
+                <th>ID da Conta</th>
+                <th>Nome da Conta</th>
+                <th>Gasto (Mês Atual)</th>
+                <th>Gasto Diário Programado</th>
+                <th>Saldo Restante</th>
+                <th>% Restante</th>
+                <th>Dias Restantes</th>
+                <th>Notificar</th>
+              </tr>
+            </thead>
+            <tbody id="accounts-tbody">
+              <tr>
+                <td colspan="8" class="text-center">Aguardando início...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab Content: Responsibles -->
+      <div id="tab-content-responsibles" class="tab-content hidden">
+        <div class="table-container">
+          <table id="responsibles-table">
+            <thead>
+              <tr>
+                <th>ID da Conta</th>
+                <th>Nome da Conta</th>
+                <th>Contatos Responsáveis</th>
+                <th class="text-center">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="responsibles-tbody">
+              <tr>
+                <td colspan="4" class="text-center">Aguardando início...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Edit Responsible Modal -->
+  <div id="edit-modal" class="modal hidden">
+    <div class="modal-content card">
+      <div class="modal-header">
+        <h3>Responsável pela Conta</h3>
+        <button id="modal-close" class="btn-close">&times;</button>
+      </div>
+      <form id="edit-form">
+        <input type="hidden" id="modal-id-conta">
+        <input type="hidden" id="modal-id-responsavel">
+        <div class="form-group">
+          <label>ID da Conta:</label>
+          <strong id="modal-id-conta-display"></strong>
+        </div>
+        <div class="form-group">
+          <label>Nome da Conta:</label>
+          <span id="modal-nome-conta-display"></span>
+        </div>
+        <div class="form-group">
+          <label for="input-nome">Nome do Responsável *:</label>
+          <input type="text" id="input-nome" required placeholder="Ex: João Silva">
+        </div>
+        <div class="form-group">
+          <label for="input-email">E-mail:</label>
+          <input type="email" id="input-email" placeholder="Ex: joao@email.com">
+        </div>
+        <div class="form-group">
+          <label for="input-telefone">Telefone:</label>
+          <input type="text" id="input-telefone" placeholder="Ex: (11) 99999-9999">
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="btn-cancel" class="btn btn-secondary">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
+      </form>
+  <!-- Send Notification Modal -->
+  <div id="notify-modal" class="modal hidden">
+    <div class="modal-content card">
+      <div class="modal-header">
+        <h3>Enviar Notificação</h3>
+        <button id="notify-modal-close" class="btn-close">&times;</button>
+      </div>
+      <form id="notify-form">
+        <input type="hidden" id="notify-id-conta">
+        <input type="hidden" id="notify-id-responsavel">
+        
+        <div class="form-group">
+          <label>Enviar para:</label>
+          <strong id="notify-contact-display"></strong>
+        </div>
+
+        <div class="form-group-row">
+          <label>Canais de Envio:</label>
+          <div class="checkbox-group">
+            <label><input type="checkbox" id="chk-whatsapp" checked> WhatsApp</label>
+            <label><input type="checkbox" id="chk-email" checked> E-mail</label>
+          </div>
+        </div>
+
+        <div class="form-group" id="group-subject">
+          <label for="notify-subject">Assunto (E-mail):</label>
+          <input type="text" id="notify-subject" value="Aviso de Saldo - Google Ads">
+        </div>
+
+        <div class="form-group">
+          <label for="notify-message">Mensagem:</label>
+          <textarea id="notify-message" rows="6" required></textarea>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="btn-notify-cancel" class="btn btn-secondary">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Enviar Notificação</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
