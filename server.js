@@ -379,12 +379,18 @@ app.get('/api/account-budget/:customerId', async (req, res) => {
       dailySpent = parseFloat(todayCostRes.data.results[0].metrics.costMicros) / 1000000;
     }
 
-    // 1.8. Process Scheduled Daily Budget
+    // 1.8. Process Scheduled Daily Budget (deduplicating shared budgets by resourceName)
     let scheduledDailyBudget = 0;
     if (campaignRes && campaignRes.data.results && campaignRes.data.results.length > 0) {
+      const seenBudgets = new Set();
       campaignRes.data.results.forEach(row => {
-        if (row.campaignBudget?.amountMicros) {
-          scheduledDailyBudget += parseFloat(row.campaignBudget.amountMicros) / 1000000;
+        const budget = row.campaignBudget;
+        if (budget && budget.amountMicros) {
+          const budgetRef = budget.resourceName || budget.id || `unknown_${Math.random()}`;
+          if (!seenBudgets.has(budgetRef)) {
+            seenBudgets.add(budgetRef);
+            scheduledDailyBudget += parseFloat(budget.amountMicros) / 1000000;
+          }
         }
       });
     }
