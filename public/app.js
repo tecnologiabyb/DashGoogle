@@ -60,6 +60,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const submitBtn = notifyForm.querySelector('button[type="submit"]');
     const originalText = submitBtn.textContent;
+    const originalBg = submitBtn.style.backgroundColor;
+    const originalBorder = submitBtn.style.borderColor;
 
     const channels = [];
     if (chkWhatsapp.checked) channels.push('whatsapp');
@@ -95,22 +97,82 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const resData = await response.json();
       
-      let feedback = 'Status do Envio:\n';
+      let errors = [];
+      let successChannels = [];
+      
       if (resData.results.whatsapp) {
-        feedback += `- WhatsApp: ${resData.results.whatsapp.success ? 'Enviado!' : 'Erro: ' + resData.results.whatsapp.error}\n`;
+        if (resData.results.whatsapp.success) {
+          successChannels.push('WhatsApp');
+        } else {
+          errors.push(`WhatsApp: ${resData.results.whatsapp.error}`);
+        }
       }
+      
       if (resData.results.email) {
-        feedback += `- E-mail: ${resData.results.email.success ? 'Enviado!' : 'Erro: ' + resData.results.email.error}\n`;
+        if (resData.results.email.success) {
+          successChannels.push('E-mail');
+        } else {
+          errors.push(`E-mail: ${resData.results.email.error}`);
+        }
       }
 
-      alert(feedback);
-      closeNotifyModal();
+      if (errors.length === 0) {
+        // All requested channels succeeded
+        submitBtn.textContent = 'Enviado! ✓';
+        submitBtn.style.backgroundColor = '#2ecc71';
+        submitBtn.style.borderColor = '#2ecc71';
+        
+        setTimeout(() => {
+          closeNotifyModal();
+          submitBtn.textContent = originalText;
+          submitBtn.style.backgroundColor = originalBg;
+          submitBtn.style.borderColor = originalBorder;
+          submitBtn.disabled = false;
+        }, 1500);
+      } else if (successChannels.length > 0) {
+        // Partial success (e.g. WhatsApp succeeded, but E-mail failed)
+        submitBtn.textContent = 'Enviado Parcial! ✓';
+        submitBtn.style.backgroundColor = '#f39c12';
+        submitBtn.style.borderColor = '#f39c12';
+        
+        alert(`Sucesso no envio de: ${successChannels.join(', ')}.\n\nErros ocorridos:\n- ${errors.join('\n- ')}`);
+        
+        setTimeout(() => {
+          closeNotifyModal();
+          submitBtn.textContent = originalText;
+          submitBtn.style.backgroundColor = originalBg;
+          submitBtn.style.borderColor = originalBorder;
+          submitBtn.disabled = false;
+        }, 1500);
+      } else {
+        // Complete failure
+        submitBtn.textContent = 'Falha no envio';
+        submitBtn.style.backgroundColor = '#e74c3c';
+        submitBtn.style.borderColor = '#e74c3c';
+        
+        alert(`Falha ao enviar notificação:\n- ${errors.join('\n- ')}`);
+        
+        setTimeout(() => {
+          submitBtn.textContent = originalText;
+          submitBtn.style.backgroundColor = originalBg;
+          submitBtn.style.borderColor = originalBorder;
+          submitBtn.disabled = false;
+        }, 2000);
+      }
     } catch (error) {
       console.error('Error sending notification:', error);
-      alert(`Erro ao enviar notificação: ${error.message}`);
-    } finally {
-      submitBtn.textContent = originalText;
-      submitBtn.disabled = false;
+      submitBtn.textContent = 'Erro';
+      submitBtn.style.backgroundColor = '#e74c3c';
+      submitBtn.style.borderColor = '#e74c3c';
+      
+      alert(`Erro de conexão ao enviar notificação: ${error.message}`);
+      
+      setTimeout(() => {
+        submitBtn.textContent = originalText;
+        submitBtn.style.backgroundColor = originalBg;
+        submitBtn.style.borderColor = originalBorder;
+        submitBtn.disabled = false;
+      }, 2000);
     }
   });
 
@@ -126,6 +188,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (targetTab === 'responsibles') {
         loadResponsibles();
+      } else if (targetTab === 'saldos') {
+        refreshNotificationColumnOnly();
       }
     });
   });
@@ -171,6 +235,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       closeEditModal();
       loadResponsibles(); // Reload list
+      refreshNotificationColumnOnly(); // Sync budget tab
     } catch (error) {
       console.error('Error saving responsible:', error);
       alert(`Erro ao salvar responsável: ${error.message}`);
@@ -371,7 +436,7 @@ document.addEventListener('DOMContentLoaded', () => {
               data-saldo="${escapeHtml(remainingText)}"
               data-dias="${escapeHtml(daysLeftText)}"
               title="Notificar ${escapeHtml(c.nome)}">
-              🔔
+              🔔 Notificar
             </button>
           </div>
         `;
@@ -535,6 +600,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       loadResponsibles();
+      refreshNotificationColumnOnly(); // Sync budget tab
     } catch (error) {
       console.error('Error deleting contact:', error);
       alert(`Erro ao excluir responsável: ${error.message}`);
@@ -570,11 +636,7 @@ document.addEventListener('DOMContentLoaded', () => {
     notifyContactDisplay.textContent = contactInfo;
 
     // Default message template
-    const templateMessage = `Olá, ${nomeResponsavel}!
-
-Gostaríamos de informar que o saldo restante da conta Google Ads "${nomeConta}" (ID: ${formatAccountId(idConta)}) é de ${saldo}.
-
-Com base no gasto diário programado, restam aproximadamente ${dias}.`;
+    const templateMessage = `Olá ${nomeResponsavel} o saldo restante na conta ${nomeConta} é de ${saldo}, Temos mais ${dias} de saldo`;
 
     notifyMessage.value = templateMessage;
     notifySubject.value = `Aviso de Saldo - Google Ads: ${nomeConta}`;
@@ -604,6 +666,68 @@ Com base no gasto diário programado, restam aproximadamente ${dias}.`;
     } catch (error) {
       console.error('Error loading responsibles cache:', error);
     }
+  }
+
+  async function refreshNotificationColumnOnly() {
+    await loadResponsiblesCache();
+    const rows = tbody.querySelectorAll('tr');
+    rows.forEach(row => {
+      const rowId = row.id;
+      if (!rowId || !rowId.startsWith('row-')) return;
+      const accountId = rowId.replace('row-', '');
+      
+      const notifyTd = row.cells[6] || row.querySelector('td:last-child');
+      if (!notifyTd) return;
+      
+      const remainingText = row.cells[4] ? row.cells[4].innerText : '-';
+      const daysLeftText = row.cells[5] ? row.cells[5].innerText : '-';
+      const accountName = row.cells[1] ? row.cells[1].innerText : '';
+      
+      const contacts = globalResponsiblesMap.get(accountId) || [];
+      let notifyHtml = '<div class="notify-list">';
+      if (contacts.length > 0) {
+        contacts.forEach(c => {
+          notifyHtml += `
+            <div class="notify-contact-item">
+              <span>${escapeHtml(c.nome)}</span>
+              <button class="btn-notify-action btn-notify-trigger" 
+                data-id-conta="${accountId}"
+                data-nome-conta="${escapeHtml(accountName)}"
+                data-id-responsavel="${c.id}"
+                data-nome-responsavel="${escapeHtml(c.nome)}"
+                data-email-responsavel="${escapeHtml(c.email || '')}"
+                data-telefone-responsavel="${escapeHtml(c.telefone || '')}"
+                data-saldo="${escapeHtml(remainingText)}"
+                data-dias="${escapeHtml(daysLeftText)}"
+                title="Notificar ${escapeHtml(c.nome)}">
+                🔔 Notificar
+              </button>
+            </div>
+          `;
+        });
+      } else {
+        notifyHtml += '<span class="text-muted" style="font-size: 11px;">Nenhum responsável</span>';
+      }
+      notifyHtml += '</div>';
+      
+      notifyTd.innerHTML = notifyHtml;
+      
+      notifyTd.querySelectorAll('.btn-notify-trigger').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const dataset = e.currentTarget.dataset;
+          openNotifyModal(
+            dataset.idConta,
+            dataset.nomeConta,
+            dataset.idResponsavel,
+            dataset.nomeResponsavel,
+            dataset.emailResponsavel,
+            dataset.telefoneResponsavel,
+            dataset.saldo,
+            dataset.dias
+          );
+        });
+      });
+    });
   }
 
   // Helpers

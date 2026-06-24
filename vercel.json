@@ -17,5 +17,11 @@
       "source": "/(.*)",
       "destination": "/public/$1"
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/check-budgets",
+      "schedule": "0 9 * * *"
+    }
   ]
 }
