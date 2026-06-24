@@ -325,6 +325,8 @@ app.get('/api/account-budget/:customerId', async (req, res) => {
         account_budget.status,
         account_budget.approved_spending_limit_micros,
         account_budget.approved_spending_limit_type,
+        account_budget.adjusted_spending_limit_micros,
+        account_budget.adjusted_spending_limit_type,
         account_budget.amount_served_micros,
         account_budget.approved_start_date_time,
         account_budget.approved_end_date_time
@@ -405,6 +407,8 @@ app.get('/api/account-budget/:customerId', async (req, res) => {
           id: b.id,
           approvedLimitMicros: b.approvedSpendingLimitMicros,
           approvedLimitType: b.approvedSpendingLimitType,
+          adjustedLimitMicros: b.adjustedSpendingLimitMicros,
+          adjustedLimitType: b.adjustedSpendingLimitType,
           amountServedMicros: b.amountServedMicros,
           startDateTime: b.approvedStartDateTime,
           endDateTime: b.approvedEndDateTime
@@ -431,8 +435,13 @@ app.get('/api/account-budget/:customerId', async (req, res) => {
       if (activeBudgets.length > 0) {
         hasActiveBudget = true;
         const active = activeBudgets[0];
-        isInfinite = active.approvedLimitType === 'INFINITE';
-        limit = isInfinite ? null : parseFloat(active.approvedLimitMicros) / 1000000;
+        
+        // Use adjusted limit fields if available, falling back to approved ones
+        const limitType = active.adjustedLimitType || active.approvedLimitType;
+        const limitMicros = active.adjustedLimitMicros || active.approvedLimitMicros;
+        
+        isInfinite = limitType === 'INFINITE';
+        limit = isInfinite ? null : parseFloat(limitMicros) / 1000000;
         budgetSpent = parseFloat(active.amountServedMicros) / 1000000;
         remaining = isInfinite ? null : limit - budgetSpent;
         startDate = active.startDateTime;
