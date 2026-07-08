@@ -884,13 +884,31 @@ if (process.env.VERCEL !== '1') {
     });
   }, 10000);
 
-  // Set interval to run check every 24 hours
-  setInterval(async () => {
-    console.log('[Scheduler] Running scheduled 24h budget check...');
-    await checkAndNotifyLowBudgets().catch(err => {
-      console.error('[Scheduler] Scheduled check failed:', err.message);
-    });
-  }, 86400000);
+  // Function to schedule the next check at exactly 8:00 AM local time
+  function scheduleDailyAlert() {
+    const now = new Date();
+    let target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 8, 0, 0, 0); // 8:00 AM today
+    
+    if (now >= target) {
+      // If it's already past 8:00 AM today, schedule for 8:00 AM tomorrow
+      target.setDate(target.getDate() + 1);
+    }
+    
+    const delay = target.getTime() - now.getTime();
+    console.log(`[Scheduler] Next local budget check scheduled for ${target.toString()} (in ${(delay / 1000 / 60).toFixed(1)} minutes)`);
+    
+    setTimeout(async () => {
+      console.log('[Scheduler] Running scheduled local budget check at 8:00 AM...');
+      await checkAndNotifyLowBudgets().catch(err => {
+        console.error('[Scheduler] Scheduled check failed:', err.message);
+      });
+      // Schedule the next day's alert
+      scheduleDailyAlert();
+    }, delay);
+  }
+
+  // Start the scheduling loop
+  scheduleDailyAlert();
 }
 
 // Start Server
